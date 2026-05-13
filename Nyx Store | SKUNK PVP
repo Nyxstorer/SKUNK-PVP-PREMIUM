@@ -84,12 +84,29 @@ end
 local function hideAll(connections)
     for _, data in pairs(connections) do
         if type(data) == "table" then
-            for _, obj in pairs(data) do pcall(function() obj.Visible = false end) end
+            for _, obj in pairs(data) do 
+                pcall(function() obj.Visible = false end) 
+            end
         else
             pcall(function() data.Visible = false end)
         end
     end
 end
+
+-- ==================== FOV CIRCLE (CORRIGIDO) ====================
+local function createFOVCircle()
+    if FOVCircle then FOVCircle:Remove() end
+    FOVCircle = Drawing.new("Circle")
+    FOVCircle.Thickness = 2
+    FOVCircle.NumSides = 64
+    FOVCircle.Color = Color3.fromRGB(255, 50, 50)
+    FOVCircle.Transparency = 0.8
+    FOVCircle.Filled = false
+    FOVCircle.Visible = false
+    FOVCircle.ZIndex = 1000
+end
+
+createFOVCircle()
 
 -- ==================== SKELETON ESP ====================
 local function updateSkeleton()
@@ -100,21 +117,19 @@ local function updateSkeleton()
         local root = char:FindFirstChild("HumanoidRootPart")
         local head = char:FindFirstChild("Head")
         if not root or not head then continue end
+        
         local _, onScreen, dist = w2s(root.Position)
         if not onScreen or dist > MaxDistanceToShow then continue end
+
         if not SkeletonConnections[player] then
             SkeletonConnections[player] = {
-                HeadToTorso = createLine(),
-                TorsoToLeftArm = createLine(),
-                TorsoToRightArm = createLine(),
-                TorsoToLeftLeg = createLine(),
-                TorsoToRightLeg = createLine(),
-                LeftArm = createLine(),
-                RightArm = createLine(),
-                LeftLeg = createLine(),
-                RightLeg = createLine()
+                HeadToTorso = createLine(), TorsoToLeftArm = createLine(),
+                TorsoToRightArm = createLine(), TorsoToLeftLeg = createLine(),
+                TorsoToRightLeg = createLine(), LeftArm = createLine(),
+                RightArm = createLine(), LeftLeg = createLine(), RightLeg = createLine()
             }
         end
+
         local sk = SkeletonConnections[player]
         local color = Color3.fromRGB(0, 255, 0)
         local function connect(a, b, line)
@@ -127,20 +142,31 @@ local function updateSkeleton()
                 line.Visible = true
             end
         end
+
         local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
         local leftArm = char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm")
         local rightArm = char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm")
         local leftLeg = char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg")
         local rightLeg = char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg")
+
         connect(head, torso, sk.HeadToTorso)
         connect(torso, leftArm, sk.TorsoToLeftArm)
         connect(torso, rightArm, sk.TorsoToRightArm)
         connect(torso, leftLeg, sk.TorsoToLeftLeg)
         connect(torso, rightLeg, sk.TorsoToRightLeg)
-        if leftArm and char:FindFirstChild("LeftLowerArm") then connect(leftArm, char.LeftLowerArm, sk.LeftArm) end
-        if rightArm and char:FindFirstChild("RightLowerArm") then connect(rightArm, char.RightLowerArm, sk.RightArm) end
-        if leftLeg and char:FindFirstChild("LeftLowerLeg") then connect(leftLeg, char.LeftLowerLeg, sk.LeftLeg) end
-        if rightLeg and char:FindFirstChild("RightLowerLeg") then connect(rightLeg, char.RightLowerLeg, sk.RightLeg) end
+
+        if leftArm and char:FindFirstChild("LeftLowerArm") then 
+            connect(leftArm, char.LeftLowerArm, sk.LeftArm) 
+        end
+        if rightArm and char:FindFirstChild("RightLowerArm") then 
+            connect(rightArm, char.RightLowerArm, sk.RightArm) 
+        end
+        if leftLeg and char:FindFirstChild("LeftLowerLeg") then 
+            connect(leftLeg, char.LeftLowerLeg, sk.LeftLeg) 
+        end
+        if rightLeg and char:FindFirstChild("RightLowerLeg") then 
+            connect(rightLeg, char.RightLowerLeg, sk.RightLeg) 
+        end
     end
 end
 
@@ -152,16 +178,20 @@ local function updateTracers()
         local char = player.Character
         local head = char:FindFirstChild("Head")
         if not head then continue end
+
         local headPos, onScreen, dist = w2s(head.Position)
         if not onScreen or dist > MaxDistanceToShow then continue end
+
         if not TracerLines[player] then
             TracerLines[player] = createLine()
             TracerLines[player].Color = TracerColor
         end
+
         local line = TracerLines[player]
         local startY = Camera.ViewportSize.Y / 2
         if TracerPosition == "Linha Alto" then startY = 0
         elseif TracerPosition == "Linha Baixo" then startY = Camera.ViewportSize.Y end
+
         line.From = Vector2.new(Camera.ViewportSize.X / 2, startY)
         line.To = headPos
         line.Visible = true
@@ -177,33 +207,41 @@ local function updateBoxESP()
         local head = char:FindFirstChild("Head")
         local hum = char:FindFirstChild("Humanoid")
         if not head or not hum then continue end
+
         local headPos, onScreen, dist = w2s(head.Position)
         if not onScreen or dist > MaxDistanceToShow then continue end
+
         if not BoxConnections[player] then
             BoxConnections[player] = {
                 TL = createLine(), TR = createLine(), BL = createLine(), BR = createLine(),
                 HealthBG = createLine(), Health = createLine()
             }
         end
+
         local data = BoxConnections[player]
         local size = 1600 / dist
         local x = headPos.X - size/2
         local y = headPos.Y - size/1.8
         local w = size
         local h = size * 1.85
+
         for _, line in pairs({data.TL, data.TR, data.BL, data.BR}) do
             line.Color = Color3.fromRGB(255, 0, 0)
             line.Visible = true
         end
+
         data.TL.From = Vector2.new(x, y); data.TL.To = Vector2.new(x+w, y)
         data.TR.From = Vector2.new(x+w, y); data.TR.To = Vector2.new(x+w, y+h)
         data.BL.From = Vector2.new(x, y+h); data.BL.To = Vector2.new(x+w, y+h)
         data.BR.From = Vector2.new(x, y); data.BR.To = Vector2.new(x, y+h)
+
+        -- Health Bar
         local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
         data.HealthBG.From = Vector2.new(x-6, y)
         data.HealthBG.To = Vector2.new(x-6, y+h)
         data.HealthBG.Color = Color3.fromRGB(30,30,30)
         data.HealthBG.Visible = true
+
         if hp > 0 then
             local healthY = y + h * (1 - hp)
             local barColor = (hp > 0.6 and Color3.fromRGB(0,255,80)) or (hp > 0.3 and Color3.fromRGB(255,200,0)) or Color3.fromRGB(255,0,0)
@@ -231,30 +269,19 @@ local function startSpinBot()
     end)
 end
 
--- ==================== FOV CIRCLE ====================
-local function updateFOVCircle()
-    if FOVCircle then FOVCircle:Remove() end
-    FOVCircle = Drawing.new("Circle")
-    FOVCircle.Thickness = 2
-    FOVCircle.NumSides = 64
-    FOVCircle.Radius = FOVSize
-    FOVCircle.Color = Color3.fromRGB(255, 50, 50)
-    FOVCircle.Transparency = 0.8
-    FOVCircle.Filled = false
-    FOVCircle.Visible = true
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-end
-
 -- ==================== AIMBOT LOGIC ====================
 local function getClosestPlayer()
     local closest, shortest = nil, FOVSize
     local mousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer or not isAlive(player) then continue end
         local aimPart = getAimPart(player.Character)
         if not aimPart then continue end
+
         local pos, onScreen = w2s(aimPart.Position)
         if not onScreen then continue end
+
         local dist = (mousePos - pos).Magnitude
         if dist < shortest then
             if WallCheckEnabled then
@@ -277,8 +304,10 @@ local function startAimbot()
         if not target or not target.Character then return end
         local aimPart = getAimPart(target.Character)
         if not aimPart then return end
+
         local currentCFrame = Camera.CFrame
         local targetCFrame = CFrame.new(currentCFrame.Position, aimPart.Position)
+
         if AimbotLegitEnabled then
             Camera.CFrame = currentCFrame:Lerp(targetCFrame, LegitSmoothness)
         else
@@ -289,7 +318,13 @@ end
 
 -- ==================== LOOP PRINCIPAL ====================
 RunService.RenderStepped:Connect(function()
-    if FOVCircle and ShowFOVEnabled then FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2) end
+    -- Atualiza FOV
+    if FOVCircle then
+        FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        FOVCircle.Radius = FOVSize
+        FOVCircle.Visible = ShowFOVEnabled
+    end
+
     if SkeletonEnabled then updateSkeleton() end
     if TracerEnabled then updateTracers() end
     if BoxESPEnabled then updateBoxESP() end
@@ -297,37 +332,49 @@ end)
 
 -- ==================== TABS ====================
 local AimbotTab = Window:CreateTab("AIMBOT", 4483362458)
+
 AimbotTab:CreateSection("Aimbot Settings")
 AimbotTab:CreateToggle({Name = "Aimbot", CurrentValue = false, Callback = function(s) 
     AimbotEnabled = s 
     if s then AimbotLegitEnabled = false end
-    if s or AimbotLegitEnabled then startAimbot() else if AimbotConnection then AimbotConnection:Disconnect() end end 
+    if s or AimbotLegitEnabled then startAimbot() else 
+        if AimbotConnection then AimbotConnection:Disconnect() end 
+    end 
 end})
+
 AimbotTab:CreateToggle({Name = "Aimbot Legit", CurrentValue = false, Callback = function(s) 
     AimbotLegitEnabled = s 
     if s then AimbotEnabled = false end
-    if s or AimbotEnabled then startAimbot() else if AimbotConnection then AimbotConnection:Disconnect() end end 
+    if s or AimbotEnabled then startAimbot() else 
+        if AimbotConnection then AimbotConnection:Disconnect() end 
+    end 
 end})
+
 AimbotTab:CreateSection("Config Aimbot")
 AimbotTab:CreateDropdown({Name = "Parte do Corpo", Options = {"Cabeça", "Peito"}, CurrentOption = {"Cabeça"}, Callback = function(sel)
     AimPart = (sel[1] == "Cabeça") and "Head" or "UpperTorso"
 end})
+
 AimbotTab:CreateToggle({Name = "WallCheck", CurrentValue = false, Callback = function(s) WallCheckEnabled = s end})
+
 AimbotTab:CreateToggle({Name = "Mostrar FOV", CurrentValue = false, Callback = function(s) 
     ShowFOVEnabled = s 
-    if s then updateFOVCircle() elseif FOVCircle then FOVCircle:Remove() end 
 end})
+
 AimbotTab:CreateSlider({Name = "FOV Size", Range = {1, 200}, Increment = 1, CurrentValue = 80, Callback = function(v) 
     FOVSize = v 
-    if FOVCircle and ShowFOVEnabled then FOVCircle.Radius = v end
 end})
 
 local VisualTab = Window:CreateTab("Visual", 4483362458)
 VisualTab:CreateSection("ESP Visual")
 VisualTab:CreateToggle({Name = "Skeleton", CurrentValue = false, Callback = function(s) 
     SkeletonEnabled = s 
-    if not s then hideAll(SkeletonConnections); SkeletonConnections = {} end 
+    if not s then 
+        hideAll(SkeletonConnections) 
+        SkeletonConnections = {} 
+    end 
 end})
+
 VisualTab:CreateToggle({Name = "Tracer", CurrentValue = false, Callback = function(s) TracerEnabled = s end})
 VisualTab:CreateDropdown({Name = "Config Tracer", Options = {"Linha Alto", "Linha Meio", "Linha Baixo"}, CurrentOption = {"Linha Meio"}, Callback = function(sel) TracerPosition = sel[1] end})
 VisualTab:CreateToggle({Name = "ESP BOX", CurrentValue = false, Callback = function(s) BoxESPEnabled = s end})
@@ -336,7 +383,9 @@ local ToolsTab = Window:CreateTab("Trools", 4483362458)
 ToolsTab:CreateSection("Spin Bot")
 ToolsTab:CreateToggle({Name = "Spin Bot", CurrentValue = false, Callback = function(s)
     SpinBotEnabled = s
-    if s then startSpinBot() elseif SpinConnection then SpinConnection:Disconnect() end
+    if s then startSpinBot() else 
+        if SpinConnection then SpinConnection:Disconnect() end 
+    end
 end})
 ToolsTab:CreateSlider({Name = "Spin Speed", Range = {10, 150}, Increment = 1, CurrentValue = 50, Callback = function(v) SpinSpeed = v end})
 
@@ -344,9 +393,9 @@ ToolsTab:CreateButton({Name = "Fechar Nyx Store", Callback = function()
     SpinBotEnabled = false
     if SpinConnection then SpinConnection:Disconnect() end
     if AimbotConnection then AimbotConnection:Disconnect() end
-    hideAll(TracerLines); hideAll(BoxConnections); hideAll(SkeletonConnections)
+    hideAll(TracerLines)
+    hideAll(BoxConnections)
+    hideAll(SkeletonConnections)
     if FOVCircle then FOVCircle:Remove() end
     Rayfield:Destroy()
 end})
-
--- Notificação removida
